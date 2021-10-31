@@ -29,36 +29,39 @@ public class BitCoinService implements BitCoinInterface {
 	private static final Logger log = LoggerFactory.getLogger(BitCoinService.class);
 
 	@Override
-	public String getBitCoinPrice(Timestamp time) throws ServiceFailedException, ParseJsonException, BadRequestException {
+	public String getBitCoinPrice(Timestamp time)
+			throws ServiceFailedException, ParseJsonException, BadRequestException {
 		validateRequest(time);
-		
-		for (Long x = Calendar.getInstance().getTimeInMillis(); x <= time.getTime(); x++) {
-			callBitCoin();
+		BitCoinDto response = new BitCoinDto();
 
-			x+=10000;
-			
+		for (Long x = Calendar.getInstance().getTimeInMillis(); x <= time.getTime(); x++) {
+			response = callBitCoin();
+
+			x += 10000;
+
 			try {
 				Thread.sleep(10000);
 			} catch (InterruptedException e) {
 				log.error(e.getMessage(), e);
-			}			
+			}
 		}
 
-		return callBitCoin().getLprice();
+		return response.getLprice();
 	}
-	
+
 	/**
 	 * Valida el request
 	 * 
-	 * @param time - tiempo
+	 * @param time
+	 *            - tiempo
 	 * @throws BadRequestException
 	 */
 	private void validateRequest(Timestamp time) throws BadRequestException {
-		if(time == null) {
+		if (time == null) {
 			throw new BadRequestException("Debe ingresar el parametro time");
 		}
-		
-		if(time.getTime() < Calendar.getInstance().getTimeInMillis()) {
+
+		if (time.getTime() < Calendar.getInstance().getTimeInMillis()) {
 			throw new BadRequestException("La fecha debe ser mayor a hoy");
 		}
 	}

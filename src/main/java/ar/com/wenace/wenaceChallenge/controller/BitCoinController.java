@@ -3,13 +3,13 @@ package ar.com.wenace.wenaceChallenge.controller;
 import java.sql.Timestamp;
 
 import javax.validation.Valid;
-import javax.websocket.server.PathParam;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import ar.com.wenace.wenaceChallenge.exception.BadRequestException;
@@ -24,7 +24,7 @@ public class BitCoinController {
 	private BitCoinService bitCoinService;
 
 	@GetMapping("/price")
-	public ResponseEntity<String> getPrice(@Valid @PathParam(value = "time") Timestamp time)
+	public ResponseEntity<String> getPrice(@Valid @RequestParam("time") Timestamp time)
 			throws ServiceFailedException, ParseJsonException, BadRequestException {
 		return ResponseEntity.ok(bitCoinService.getBitCoinPrice(time));
 	}
