@@ -1,5 +1,6 @@
 package ar.com.wenace.wenaceChallenge.service;
 
+import java.math.BigDecimal;
 import java.sql.Timestamp;
 import java.util.Calendar;
 import java.util.List;
@@ -35,44 +36,52 @@ public class BitCoinService implements BitCoinInterface {
 	public String getBitCoinPrice(List<Timestamp> times)
 			throws ServiceFailedException, ParseJsonException, BadRequestException {
 		validateRequest(times);
-		BitCoinDto response = new BitCoinDto(times.get(0));
+		BitCoinDto response = new BitCoinDto(BigDecimal.ZERO, 0L);
+		Long localTime = Calendar.getInstance().getTimeInMillis();
 
-		LongStream.iterate(Calendar.getInstance().getTimeInMillis(), y -> y + 10000)
-				.limit(response.getTimeRequested().getTime()).forEach(x -> {
-					try {
-						String lPrice = callBitCoin().getLprice();
-						response.setLprice(lPrice);
+		times.stream().forEach(time -> {
+			Long executions = (time.getTime() - Calendar.getInstance().getTimeInMillis()) / 10000;
 
-						try {
-							Thread.sleep(10000);
-						} catch (InterruptedException e) {
-							log.error(e.getMessage(), e);
-						}
-					} catch (ServiceFailedException | ParseJsonException e) {
-						e.printStackTrace();
-					}
-				});
+			response.setExecutions(executions + response.getExecutions());
 
-//
-//		for (Long x = Calendar.getInstance().getTimeInMillis(); x <= times.getTime(); x++) {
-//			response = callBitCoin();
-//
-//			x += 10000;
-//
-//			try {
-//				Thread.sleep(10000);
-//			} catch (InterruptedException e) {
-//				log.error(e.getMessage(), e);
-//			}
-//		}
+			LongStream.iterate(localTime, y -> y + 10000).limit(executions).forEach(x -> {
+				try {
+					String lPrice = callBitCoin().getLprice();
+					BigDecimal total = response.getTotalPrice().add(new BigDecimal(lPrice));
+					response.setTotalPrice(total);
+					response.setLprice(lPrice);
 
-		return response.getLprice();
+					Thread.sleep(10000);
+				} catch (InterruptedException ex) {
+					log.error(ex.getMessage());
+				} catch (ServiceFailedException ex) {
+					log.error(ex.getMessage());
+					response.setServiceEx(ex);
+				} catch (ParseJsonException ex) {
+					log.error(ex.getMessage());
+					response.setParseJsonEx(ex);
+				}
+			});
+		});
+
+		if (response.getServiceEx() != null) {
+			throw response.getServiceEx();
+		}
+
+		if (response.getParseJsonEx() != null) {
+			throw response.getParseJsonEx();
+		}
+
+		String porcentage = response.getTotalPrice().divide(new BigDecimal(response.getExecutions())).toString();
+
+		return new StringBuilder("price: ").append(response.getLprice()).append(" prc: ").append(porcentage).toString();
 	}
 
 	/**
 	 * Valida el request
 	 * 
-	 * @param times - lista de tiempos
+	 * @param times
+	 *            - lista de tiempos
 	 * @throws BadRequestException
 	 */
 	private void validateRequest(List<Timestamp> times) throws BadRequestException {
