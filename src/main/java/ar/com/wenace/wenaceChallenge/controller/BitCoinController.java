@@ -1,6 +1,7 @@
 package ar.com.wenace.wenaceChallenge.controller;
 
 import java.sql.Timestamp;
+import java.util.Arrays;
 
 import javax.validation.Valid;
 
@@ -26,20 +27,26 @@ public class BitCoinController {
 	@GetMapping("/price")
 	public ResponseEntity<String> getPrice(@Valid @RequestParam("time") Timestamp time)
 			throws ServiceFailedException, ParseJsonException, BadRequestException {
-		return ResponseEntity.ok(bitCoinService.getBitCoinPrice(time));
+		return ResponseEntity.ok(bitCoinService.getBitCoinPrice(Arrays.asList(time)));
 	}
-	
-	
+
+	@GetMapping("/prices")
+	public ResponseEntity<String> getPrices(@Valid @RequestParam("time") Timestamp time,
+			@Valid @RequestParam("time2") Timestamp time2)
+			throws ServiceFailedException, ParseJsonException, BadRequestException {
+		return ResponseEntity.ok(bitCoinService.getBitCoinPrice(Arrays.asList(time, time2)));
+	}
+
 	@ExceptionHandler(ServiceFailedException.class)
 	private ResponseEntity<String> serviceErrorEx() {
 		return ResponseEntity.status(HttpStatus.BAD_GATEWAY).body("El servicio de bitcoin fallo");
 	}
-	
+
 	@ExceptionHandler(ParseJsonException.class)
 	private ResponseEntity<String> parseJsonEx() {
 		return ResponseEntity.badRequest().body("La fecha debe tener el formato de yyyy-MM-dd hh:mm:ss");
 	}
-	
+
 	@ExceptionHandler(BadRequestException.class)
 	private ResponseEntity<String> badRequestEx(BadRequestException ex) {
 		return ResponseEntity.badRequest().body(ex.getMessage());

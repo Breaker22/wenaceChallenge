@@ -2,11 +2,14 @@ package ar.com.wenace.wenaceChallenge.service;
 
 import java.sql.Timestamp;
 import java.util.Calendar;
+import java.util.List;
+import java.util.stream.LongStream;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.util.CollectionUtils;
 
 import ar.com.wenace.wenaceChallenge.client.BitCointClient;
 import ar.com.wenace.wenaceChallenge.dto.BitCoinDto;
@@ -29,22 +32,39 @@ public class BitCoinService implements BitCoinInterface {
 	private static final Logger log = LoggerFactory.getLogger(BitCoinService.class);
 
 	@Override
-	public String getBitCoinPrice(Timestamp time)
+	public String getBitCoinPrice(List<Timestamp> times)
 			throws ServiceFailedException, ParseJsonException, BadRequestException {
-		validateRequest(time);
-		BitCoinDto response = new BitCoinDto();
+		validateRequest(times);
+		BitCoinDto response = new BitCoinDto(times.get(0));
 
-		for (Long x = Calendar.getInstance().getTimeInMillis(); x <= time.getTime(); x++) {
-			response = callBitCoin();
+		LongStream.iterate(Calendar.getInstance().getTimeInMillis(), y -> y + 10000)
+				.limit(response.getTimeRequested().getTime()).forEach(x -> {
+					try {
+						String lPrice = callBitCoin().getLprice();
+						response.setLprice(lPrice);
 
-			x += 10000;
+						try {
+							Thread.sleep(10000);
+						} catch (InterruptedException e) {
+							log.error(e.getMessage(), e);
+						}
+					} catch (ServiceFailedException | ParseJsonException e) {
+						e.printStackTrace();
+					}
+				});
 
-			try {
-				Thread.sleep(10000);
-			} catch (InterruptedException e) {
-				log.error(e.getMessage(), e);
-			}
-		}
+//
+//		for (Long x = Calendar.getInstance().getTimeInMillis(); x <= times.getTime(); x++) {
+//			response = callBitCoin();
+//
+//			x += 10000;
+//
+//			try {
+//				Thread.sleep(10000);
+//			} catch (InterruptedException e) {
+//				log.error(e.getMessage(), e);
+//			}
+//		}
 
 		return response.getLprice();
 	}
@@ -52,16 +72,19 @@ public class BitCoinService implements BitCoinInterface {
 	/**
 	 * Valida el request
 	 * 
-	 * @param time
-	 *            - tiempo
+	 * @param times - lista de tiempos
 	 * @throws BadRequestException
 	 */
-	private void validateRequest(Timestamp time) throws BadRequestException {
-		if (time == null) {
+	private void validateRequest(List<Timestamp> times) throws BadRequestException {
+		if (CollectionUtils.isEmpty(times)) {
 			throw new BadRequestException("Debe ingresar el parametro time");
 		}
 
-		if (time.getTime() < Calendar.getInstance().getTimeInMillis()) {
+		times.get(0).getTime();
+		boolean isTimeOk = times.stream()
+				.anyMatch(time -> Long.compare(time.getTime(), Calendar.getInstance().getTimeInMillis()) > 0);
+
+		if (!isTimeOk) {
 			throw new BadRequestException("La fecha debe ser mayor a hoy");
 		}
 	}
@@ -76,6 +99,7 @@ public class BitCoinService implements BitCoinInterface {
 	private BitCoinDto callBitCoin() throws ServiceFailedException, ParseJsonException {
 		BitCoinDto bitCoin = new BitCoinDto();
 		bitCoin = bitCoinClient.callBitCoinService();
+
 		bitCoinRepo.save(new BitCoin(bitCoin));
 
 		return bitCoin;

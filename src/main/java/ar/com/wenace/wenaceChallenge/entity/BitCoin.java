@@ -21,8 +21,8 @@ public class BitCoin {
 	private String curr1;
 
 	private String curr2;
-
-	public BitCoin() {
+	
+	public BitCoin() {		
 	}
 
 	public BitCoin(BitCoinDto bitCoin) {
