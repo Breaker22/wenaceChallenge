@@ -23,9 +23,17 @@ public class WenaceChallengeApplicationTests {
 	private MockMvc mockMvc;
 
 	@Test
-	public void sad() throws Exception {
+	public void testPrice() throws Exception {
 		mockMvc.perform(MockMvcRequestBuilders.get("/price")
 				.param("time", new Timestamp(Calendar.getInstance().getTimeInMillis() + 30000).toString())
+				.accept(MimeTypeUtils.APPLICATION_JSON_VALUE)).andExpect(MockMvcResultMatchers.status().isOk());
+	}
+
+	@Test
+	public void testPrices() throws Exception {
+		mockMvc.perform(MockMvcRequestBuilders.get("/prices")
+				.param("time", new Timestamp(Calendar.getInstance().getTimeInMillis() + 20000).toString())
+				.param("time2", new Timestamp(Calendar.getInstance().getTimeInMillis() + 30000).toString())
 				.accept(MimeTypeUtils.APPLICATION_JSON_VALUE)).andExpect(MockMvcResultMatchers.status().isOk());
 	}
 }
